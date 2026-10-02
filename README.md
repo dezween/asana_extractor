@@ -88,6 +88,23 @@ ${OUTPUT_DIR}/projects/{timestamp}_{project_gid}.json
 
 Each file is a single pretty-printed JSON object for that entity. The timestamp prefix (UTC, sortable) means every extraction cycle writes new files instead of overwriting the previous snapshot, so `output/` accumulates a history per entity. To find the latest snapshot for a given entity, pick the lexicographically last file matching `*_{gid}.json` in its directory.
 
+## Logging
+
+Structured JSON logs via the standard library's `log/slog` (`slog.NewJSONHandler`, written to stdout) — one line per event, easy to pipe into `jq` or any log aggregator:
+
+```sh
+go run ./cmd/backednsvc --interval=30s | jq .
+```
+
+```json
+{"time":"...","level":"INFO","msg":"starting asana extractor","workspace":"...","output_dir":"./output","interval":"30s","cycle_timeout":"2m0s"}
+{"time":"...","level":"INFO","msg":"extraction cycle summary","workspace":"...","users_fetched":4,"users_written":4,"projects_fetched":3,"projects_written":3,"errors":0}
+{"time":"...","level":"INFO","msg":"extraction cycle completed successfully"}
+{"time":"...","level":"INFO","msg":"shutdown complete"}
+```
+
+The `extraction cycle summary` line (emitted by `Extractor.Run`) carries fetch/write counts per entity type plus an error count, so a cycle's outcome is inspectable without re-reading the output directory. Failures log at `ERROR` level with the underlying error message attached (`extraction cycle failed`), rather than aborting the process.
+
 ## Rate limiting
 
 Two mechanisms work together, both built on the Go standard library only (no `golang.org/x/time/rate`):
