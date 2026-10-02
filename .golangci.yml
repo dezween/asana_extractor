@@ -1,0 +1,25 @@
+version: "2"
+
+run:
+  timeout: 3m
+
+linters:
+  default: standard
+  enable:
+    - errorlint
+    - bodyclose
+  exclusions:
+    paths:
+      - '.*/mocks/.*'
+    rules:
+      # Test helpers (httptest handlers, fixtures) routinely ignore
+      # Write/Encode errors — that's idiomatic, not a bug, so don't
+      # hold test files to the same errcheck strictness as production code.
+      - path: '_test\.go$'
+        linters:
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
