@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"asana_extractor/internal/extractor/port"
 )
@@ -17,7 +18,9 @@ type Extractor struct {
 	writer port.Writer
 }
 
-// NewExtractor builds an Extractor.
+// NewExtractor builds an Extractor. Logging uses slog.Default(); callers
+// that want cycle summaries routed through a specific handler should call
+// slog.SetDefault before running cycles (see cmd/backednsvc).
 func NewExtractor(client port.AsanaClient, writer port.Writer) *Extractor {
 	return &Extractor{client: client, writer: writer}
 }
@@ -33,9 +36,12 @@ func (e *Extractor) Run(ctx context.Context, workspaceGID string) error {
 	if err != nil {
 		errs = append(errs, fmt.Errorf("list users: %w", err))
 	}
+	usersWritten := 0
 	for _, u := range users {
 		if err := e.writer.WriteUser(u); err != nil {
 			errs = append(errs, fmt.Errorf("write user %s: %w", u.GID, err))
+		} else {
+			usersWritten++
 		}
 	}
 
@@ -43,11 +49,23 @@ func (e *Extractor) Run(ctx context.Context, workspaceGID string) error {
 	if err != nil {
 		errs = append(errs, fmt.Errorf("list projects: %w", err))
 	}
+	projectsWritten := 0
 	for _, p := range projects {
 		if err := e.writer.WriteProject(p); err != nil {
 			errs = append(errs, fmt.Errorf("write project %s: %w", p.GID, err))
+		} else {
+			projectsWritten++
 		}
 	}
+
+	slog.Info("extraction cycle summary",
+		"workspace", workspaceGID,
+		"users_fetched", len(users),
+		"users_written", usersWritten,
+		"projects_fetched", len(projects),
+		"projects_written", projectsWritten,
+		"errors", len(errs),
+	)
 
 	return errors.Join(errs...)
 }

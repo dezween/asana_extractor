@@ -6,7 +6,8 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
+	"log/slog"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -18,13 +19,16 @@ import (
 )
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
+
 	var intervalFlag time.Duration
 	flag.DurationVar(&intervalFlag, "interval", 0, "extraction interval, e.g. 5m or 30s (overrides EXTRACT_INTERVAL)")
 	flag.Parse()
 
 	cfg, err := envloader.NewLoader().Load()
 	if err != nil {
-		log.Fatalf("config: %v", err)
+		slog.Error("config error", "error", err.Error())
+		os.Exit(1)
 	}
 
 	if intervalFlag > 0 {
@@ -46,10 +50,15 @@ func main() {
 
 	go func() {
 		<-shutdownCtx.Done()
-		log.Println("shutdown signal received: letting the current cycle finish, then exiting")
+		slog.Info("shutdown signal received: letting the current cycle finish, then exiting")
 	}()
 
-	log.Printf("starting asana extractor: workspace=%s output=%s interval=%s cycle_timeout=%s", cfg.WorkspaceGID, cfg.OutputDir, cfg.Interval, cfg.CycleTimeout)
+	slog.Info("starting asana extractor",
+		"workspace", cfg.WorkspaceGID,
+		"output_dir", cfg.OutputDir,
+		"interval", cfg.Interval.String(),
+		"cycle_timeout", cfg.CycleTimeout.String(),
+	)
 
 	// cfg.CycleTimeout bounds a single extraction cycle (ListUsers + all
 	// writes + ListProjects + all writes) so that, even once shutdown is
@@ -64,11 +73,11 @@ func main() {
 		return extractor.Run(cycleCtx, cfg.WorkspaceGID)
 	}, func(err error) {
 		if err != nil {
-			log.Printf("extraction cycle failed: %v", err)
+			slog.Error("extraction cycle failed", "error", err.Error())
 		} else {
-			log.Printf("extraction cycle completed successfully")
+			slog.Info("extraction cycle completed successfully")
 		}
 	})
 
-	log.Println("shutdown complete")
+	slog.Info("shutdown complete")
 }
