@@ -1,0 +1,24 @@
+Asana Extractor Exercise
+Introduction:
+Asana is a popular work management platform that helps teams organize and track their work. It provides features for task management, project collaboration, and team communication. As part of this exercise, you will create a simple Asana “extractor” written in Go/Scala/Rust to retrieve users and projects from the Asana API and return the data in JSON format to a dedicated folder.
+The Asana URL is https://asana.com, and Asana documentation developers-asana.
+Goal:
+Create a Go/Scala/Rust program interacting with the Asana API to extract users and projects. The extracted information should be returned in JSON format, and the process should occur every 5 minutes. Pay attention to rate limits and implement tests to ensure functionality.
+Tasks:
+Task 0: Create an Asana Account 
+Go to the Asana URL and create an account. Add at least 3 users (dummy emails) and make at least 2 projects. Generate a personal access token for the program (do not use OAuth).
+Task 1: Write Asana Extractor
+Implement a program that communicates with the Asana API to retrieve information about users and projects. Ensure that the rate limits are respected. Return each user/project in its own JSON.
+Task 2: Implement Periodic Extraction
+Modify your program to run the extraction process in 2 options: 
+every 5 minutes
+every 30 seconds.
+Think of scale—imagine your company has thousands of projects and employees. How do you handle it?
+
+Task 3: Write Tests
+Write tests to validate the Asana extractor's correctness. Use the testing library of your choice for assertions.
+
+
+The solution should be submitted in a dedicated repository, including a README file that explains the solution and how to run it
+
+
